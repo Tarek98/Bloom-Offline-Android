@@ -63,3 +63,34 @@ https://github.com/bloomoffline/iOS/assets/159130033/2e2c68e1-782c-4186-99b0-740
 <br>
 
 Based on https://github.com/fwcd/distributed-chat and ported to Android
+
+
+<h1>
+Building & Running
+</h1>
+
+Pre-rerequisites:
+
+- Java (OpenJDK and JRE 21+).
+- Android SDK command line tools **OR** Android Studio IDE.
+- If you want to use command line tools:
+  - Follow initial install steps here: https://developer.android.com/tools/sdkmanager
+  - Accept licenses: `sdkmanager --licenses`
+  - (🚧 Verify) Check Android SDK build tools intended for this project (see `compileSdk` in `build.gradle.kts`).
+  - Install essential packages with given version above (34 here): `sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"`
+  - Verify installation: Confirm this works: `adb --version; sdkmanager --version`
+
+
+(🚧 Successful) To build a debug APK for the Android app:
+```sh
+./gradlew assembleDebug
+```
+
+(🚧 Failing) To install and run on a connected device or emulator
+```sh
+./gradlew installDebug
+```
+
+# 🚧 TODO
+- Find how to use emulator without Android Studio & add steps for it.
+- Learn more about gradle steps and if they are best way to build/test.
