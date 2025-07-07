@@ -61,31 +61,6 @@ private class BloomDatabaseImpl(
 
     public override fun create(driver: SqlDriver): Unit {
       driver.execute(null, """
-          |CREATE TABLE PrivatePartDb (
-          |    id TEXT PRIMARY KEY,
-          |    name TEXT,
-          |    deviceId INTEGER,
-          |    registrationId INTEGER,
-          |    identityKeyPair TEXT,
-          |    preKeys TEXT,
-          |    signedPreKey TEXT
-          |)
-          """.trimMargin(), 0)
-      driver.execute(null, """
-          |CREATE TABLE ProfileDb (
-          |    id TEXT PRIMARY KEY,
-          |    presence TEXT
-          |)
-          """.trimMargin(), 0)
-      driver.execute(null, """
-          |CREATE TABLE ChatPresenceDb (
-          |    id TEXT PRIMARY KEY,
-          |    user TEXT,
-          |    status TEXT,
-          |    info TEXT
-          |)
-          """.trimMargin(), 0)
-      driver.execute(null, """
           |CREATE TABLE MessageDb (
           |    id TEXT PRIMARY KEY,
           |    timestamp INTEGER,
@@ -99,20 +74,6 @@ private class BloomDatabaseImpl(
           |    isPin INTEGER,
           |    isNewNotification INTEGER,
           |    chatChannel TEXT
-          |)
-          """.trimMargin(), 0)
-      driver.execute(null, """
-          |CREATE TABLE PublicPartDb (
-          |    id TEXT PRIMARY KEY,
-          |    registrationId INTEGER,
-          |    name TEXT,
-          |    deviceId INTEGER,
-          |    preKeyId INTEGER,
-          |    preKeyPublicKey TEXT,
-          |    signedPreKeyId INTEGER,
-          |    signedPreKeyPublicKey TEXT,
-          |    signedPreKeySignature TEXT,
-          |    identityKeyPairPublicKey TEXT
           |)
           """.trimMargin(), 0)
       driver.execute(null, """
@@ -132,6 +93,45 @@ private class BloomDatabaseImpl(
           |    name TEXT,
           |    logicalClock INTEGER,
           |    displayName TEXT
+          |)
+          """.trimMargin(), 0)
+      driver.execute(null, """
+          |CREATE TABLE PublicPartDb (
+          |    id TEXT PRIMARY KEY,
+          |    registrationId INTEGER,
+          |    name TEXT,
+          |    deviceId INTEGER,
+          |    preKeyId INTEGER,
+          |    preKeyPublicKey TEXT,
+          |    signedPreKeyId INTEGER,
+          |    signedPreKeyPublicKey TEXT,
+          |    signedPreKeySignature TEXT,
+          |    identityKeyPairPublicKey TEXT
+          |)
+          """.trimMargin(), 0)
+      driver.execute(null, """
+          |CREATE TABLE ProfileDb (
+          |    id TEXT PRIMARY KEY,
+          |    presence TEXT
+          |)
+          """.trimMargin(), 0)
+      driver.execute(null, """
+          |CREATE TABLE PrivatePartDb (
+          |    id TEXT PRIMARY KEY,
+          |    name TEXT,
+          |    deviceId INTEGER,
+          |    registrationId INTEGER,
+          |    identityKeyPair TEXT,
+          |    preKeys TEXT,
+          |    signedPreKey TEXT
+          |)
+          """.trimMargin(), 0)
+      driver.execute(null, """
+          |CREATE TABLE ChatPresenceDb (
+          |    id TEXT PRIMARY KEY,
+          |    user TEXT,
+          |    status TEXT,
+          |    info TEXT
           |)
           """.trimMargin(), 0)
     }
@@ -171,318 +171,6 @@ private class BloomDatabaseImpl(
             """.trimMargin(), 0)
       }
     }
-  }
-}
-
-private class PrivatePartQueriesImpl(
-  private val database: BloomDatabaseImpl,
-  private val driver: SqlDriver
-) : TransacterImpl(driver), PrivatePartQueries {
-  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
-
-  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
-
-  public override fun <T : Any> selectById(id: String, mapper: (
-    id: String,
-    name: String?,
-    deviceId: Long?,
-    registrationId: Long?,
-    identityKeyPair: String?,
-    preKeys: String?,
-    signedPreKey: String?
-  ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getString(1),
-      cursor.getLong(2),
-      cursor.getLong(3),
-      cursor.getString(4),
-      cursor.getString(5),
-      cursor.getString(6)
-    )
-  }
-
-  public override fun selectById(id: String): Query<PrivatePartDb> = selectById(id) { id_, name,
-      deviceId, registrationId, identityKeyPair, preKeys, signedPreKey ->
-    PrivatePartDb(
-      id_,
-      name,
-      deviceId,
-      registrationId,
-      identityKeyPair,
-      preKeys,
-      signedPreKey
-    )
-  }
-
-  public override fun <T : Any> selectAll(mapper: (
-    id: String,
-    name: String?,
-    deviceId: Long?,
-    registrationId: Long?,
-    identityKeyPair: String?,
-    preKeys: String?,
-    signedPreKey: String?
-  ) -> T): Query<T> = Query(-155026277, selectAll, driver, "PrivatePart.sq", "selectAll",
-      "SELECT * FROM PrivatePartDb") { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getString(1),
-      cursor.getLong(2),
-      cursor.getLong(3),
-      cursor.getString(4),
-      cursor.getString(5),
-      cursor.getString(6)
-    )
-  }
-
-  public override fun selectAll(): Query<PrivatePartDb> = selectAll { id, name, deviceId,
-      registrationId, identityKeyPair, preKeys, signedPreKey ->
-    PrivatePartDb(
-      id,
-      name,
-      deviceId,
-      registrationId,
-      identityKeyPair,
-      preKeys,
-      signedPreKey
-    )
-  }
-
-  public override fun insert(PrivatePartDb: PrivatePartDb): Unit {
-    driver.execute(951417059, """
-    |INSERT OR REPLACE INTO PrivatePartDb
-    |VALUES (?, ?, ?, ?, ?, ?, ?)
-    """.trimMargin(), 7) {
-      bindString(1, PrivatePartDb.id)
-      bindString(2, PrivatePartDb.name)
-      bindLong(3, PrivatePartDb.deviceId)
-      bindLong(4, PrivatePartDb.registrationId)
-      bindString(5, PrivatePartDb.identityKeyPair)
-      bindString(6, PrivatePartDb.preKeys)
-      bindString(7, PrivatePartDb.signedPreKey)
-    }
-    notifyQueries(951417059, {database.privatePartQueries.selectById +
-        database.privatePartQueries.selectAll})
-  }
-
-  public override fun removeById(id: String): Unit {
-    driver.execute(-2051246176, """
-    |DELETE FROM PrivatePartDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-    notifyQueries(-2051246176, {database.privatePartQueries.selectById +
-        database.privatePartQueries.selectAll})
-  }
-
-  public override fun removeAll(): Unit {
-    driver.execute(-1451643885, """DELETE FROM PrivatePartDb""", 0)
-    notifyQueries(-1451643885, {database.privatePartQueries.selectById +
-        database.privatePartQueries.selectAll})
-  }
-
-  private inner class SelectByIdQuery<out T : Any>(
-    public val id: String,
-    mapper: (SqlCursor) -> T
-  ) : Query<T>(selectById, mapper) {
-    public override fun execute(): SqlCursor = driver.executeQuery(-510805992, """
-    |SELECT *
-    |FROM PrivatePartDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-
-    public override fun toString(): String = "PrivatePart.sq:selectById"
-  }
-}
-
-private class ProfileQueriesImpl(
-  private val database: BloomDatabaseImpl,
-  private val driver: SqlDriver
-) : TransacterImpl(driver), ProfileQueries {
-  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
-
-  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
-
-  public override fun <T : Any> selectById(id: String, mapper: (id: String,
-      presence: String?) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getString(1)
-    )
-  }
-
-  public override fun selectById(id: String): Query<ProfileDb> = selectById(id) { id_, presence ->
-    ProfileDb(
-      id_,
-      presence
-    )
-  }
-
-  public override fun <T : Any> selectAll(mapper: (id: String, presence: String?) -> T): Query<T> =
-      Query(1079106280, selectAll, driver, "Profile.sq", "selectAll", "SELECT * FROM ProfileDb") {
-      cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getString(1)
-    )
-  }
-
-  public override fun selectAll(): Query<ProfileDb> = selectAll { id, presence ->
-    ProfileDb(
-      id,
-      presence
-    )
-  }
-
-  public override fun insert(ProfileDb: ProfileDb): Unit {
-    driver.execute(114984374, """
-    |INSERT OR REPLACE INTO ProfileDb
-    |VALUES (?, ?)
-    """.trimMargin(), 2) {
-      bindString(1, ProfileDb.id)
-      bindString(2, ProfileDb.presence)
-    }
-    notifyQueries(114984374, {database.profileQueries.selectById +
-        database.profileQueries.selectAll})
-  }
-
-  public override fun removeById(id: String): Unit {
-    driver.execute(1847124723, """
-    |DELETE FROM ProfileDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-    notifyQueries(1847124723, {database.profileQueries.selectById +
-        database.profileQueries.selectAll})
-  }
-
-  public override fun removeAll(): Unit {
-    driver.execute(-217511328, """DELETE FROM ProfileDb""", 0)
-    notifyQueries(-217511328, {database.profileQueries.selectById +
-        database.profileQueries.selectAll})
-  }
-
-  private inner class SelectByIdQuery<out T : Any>(
-    public val id: String,
-    mapper: (SqlCursor) -> T
-  ) : Query<T>(selectById, mapper) {
-    public override fun execute(): SqlCursor = driver.executeQuery(-907402389, """
-    |SELECT *
-    |FROM ProfileDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-
-    public override fun toString(): String = "Profile.sq:selectById"
-  }
-}
-
-private class ChatPresenceQueriesImpl(
-  private val database: BloomDatabaseImpl,
-  private val driver: SqlDriver
-) : TransacterImpl(driver), ChatPresenceQueries {
-  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
-
-  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
-
-  public override fun <T : Any> selectById(id: String, mapper: (
-    id: String,
-    user: String?,
-    status: String?,
-    info: String?
-  ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getString(1),
-      cursor.getString(2),
-      cursor.getString(3)
-    )
-  }
-
-  public override fun selectById(id: String): Query<ChatPresenceDb> = selectById(id) { id_, user,
-      status, info ->
-    ChatPresenceDb(
-      id_,
-      user,
-      status,
-      info
-    )
-  }
-
-  public override fun <T : Any> selectAll(mapper: (
-    id: String,
-    user: String?,
-    status: String?,
-    info: String?
-  ) -> T): Query<T> = Query(-1833405206, selectAll, driver, "ChatPresence.sq", "selectAll",
-      "SELECT * FROM ChatPresenceDb") { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getString(1),
-      cursor.getString(2),
-      cursor.getString(3)
-    )
-  }
-
-  public override fun selectAll(): Query<ChatPresenceDb> = selectAll { id, user, status, info ->
-    ChatPresenceDb(
-      id,
-      user,
-      status,
-      info
-    )
-  }
-
-  public override fun insert(ChatPresenceDb: ChatPresenceDb): Unit {
-    driver.execute(2006973172, """
-    |INSERT OR REPLACE INTO ChatPresenceDb
-    |VALUES (?, ?, ?, ?)
-    """.trimMargin(), 4) {
-      bindString(1, ChatPresenceDb.id)
-      bindString(2, ChatPresenceDb.user)
-      bindString(3, ChatPresenceDb.status)
-      bindString(4, ChatPresenceDb.info)
-    }
-    notifyQueries(2006973172, {database.chatPresenceQueries.selectAll +
-        database.chatPresenceQueries.selectById})
-  }
-
-  public override fun removeById(id: String): Unit {
-    driver.execute(1753581873, """
-    |DELETE FROM ChatPresenceDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-    notifyQueries(1753581873, {database.chatPresenceQueries.selectAll +
-        database.chatPresenceQueries.selectById})
-  }
-
-  public override fun removeAll(): Unit {
-    driver.execute(1164944482, """DELETE FROM ChatPresenceDb""", 0)
-    notifyQueries(1164944482, {database.chatPresenceQueries.selectAll +
-        database.chatPresenceQueries.selectById})
-  }
-
-  private inner class SelectByIdQuery<out T : Any>(
-    public val id: String,
-    mapper: (SqlCursor) -> T
-  ) : Query<T>(selectById, mapper) {
-    public override fun execute(): SqlCursor = driver.executeQuery(-1000945239, """
-    |SELECT *
-    |FROM ChatPresenceDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-
-    public override fun toString(): String = "ChatPresence.sq:selectById"
   }
 }
 
@@ -645,154 +333,6 @@ private class MessageQueriesImpl(
     }
 
     public override fun toString(): String = "Message.sq:selectById"
-  }
-}
-
-private class PublicPartQueriesImpl(
-  private val database: BloomDatabaseImpl,
-  private val driver: SqlDriver
-) : TransacterImpl(driver), PublicPartQueries {
-  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
-
-  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
-
-  public override fun <T : Any> selectById(id: String, mapper: (
-    id: String,
-    registrationId: Long?,
-    name: String?,
-    deviceId: Long?,
-    preKeyId: Long?,
-    preKeyPublicKey: String?,
-    signedPreKeyId: Long?,
-    signedPreKeyPublicKey: String?,
-    signedPreKeySignature: String?,
-    identityKeyPairPublicKey: String?
-  ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getLong(1),
-      cursor.getString(2),
-      cursor.getLong(3),
-      cursor.getLong(4),
-      cursor.getString(5),
-      cursor.getLong(6),
-      cursor.getString(7),
-      cursor.getString(8),
-      cursor.getString(9)
-    )
-  }
-
-  public override fun selectById(id: String): Query<PublicPartDb> = selectById(id) { id_,
-      registrationId, name, deviceId, preKeyId, preKeyPublicKey, signedPreKeyId,
-      signedPreKeyPublicKey, signedPreKeySignature, identityKeyPairPublicKey ->
-    PublicPartDb(
-      id_,
-      registrationId,
-      name,
-      deviceId,
-      preKeyId,
-      preKeyPublicKey,
-      signedPreKeyId,
-      signedPreKeyPublicKey,
-      signedPreKeySignature,
-      identityKeyPairPublicKey
-    )
-  }
-
-  public override fun <T : Any> selectAll(mapper: (
-    id: String,
-    registrationId: Long?,
-    name: String?,
-    deviceId: Long?,
-    preKeyId: Long?,
-    preKeyPublicKey: String?,
-    signedPreKeyId: Long?,
-    signedPreKeyPublicKey: String?,
-    signedPreKeySignature: String?,
-    identityKeyPairPublicKey: String?
-  ) -> T): Query<T> = Query(-1620776063, selectAll, driver, "PublicPart.sq", "selectAll",
-      "SELECT * FROM PublicPartDb") { cursor ->
-    mapper(
-      cursor.getString(0)!!,
-      cursor.getLong(1),
-      cursor.getString(2),
-      cursor.getLong(3),
-      cursor.getLong(4),
-      cursor.getString(5),
-      cursor.getLong(6),
-      cursor.getString(7),
-      cursor.getString(8),
-      cursor.getString(9)
-    )
-  }
-
-  public override fun selectAll(): Query<PublicPartDb> = selectAll { id, registrationId, name,
-      deviceId, preKeyId, preKeyPublicKey, signedPreKeyId, signedPreKeyPublicKey,
-      signedPreKeySignature, identityKeyPairPublicKey ->
-    PublicPartDb(
-      id,
-      registrationId,
-      name,
-      deviceId,
-      preKeyId,
-      preKeyPublicKey,
-      signedPreKeyId,
-      signedPreKeyPublicKey,
-      signedPreKeySignature,
-      identityKeyPairPublicKey
-    )
-  }
-
-  public override fun insert(PublicPartDb: PublicPartDb): Unit {
-    driver.execute(983950269, """
-    |INSERT OR REPLACE INTO PublicPartDb
-    |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """.trimMargin(), 10) {
-      bindString(1, PublicPartDb.id)
-      bindLong(2, PublicPartDb.registrationId)
-      bindString(3, PublicPartDb.name)
-      bindLong(4, PublicPartDb.deviceId)
-      bindLong(5, PublicPartDb.preKeyId)
-      bindString(6, PublicPartDb.preKeyPublicKey)
-      bindLong(7, PublicPartDb.signedPreKeyId)
-      bindString(8, PublicPartDb.signedPreKeyPublicKey)
-      bindString(9, PublicPartDb.signedPreKeySignature)
-      bindString(10, PublicPartDb.identityKeyPairPublicKey)
-    }
-    notifyQueries(983950269, {database.publicPartQueries.selectAll +
-        database.publicPartQueries.selectById})
-  }
-
-  public override fun removeById(id: String): Unit {
-    driver.execute(-244849286, """
-    |DELETE FROM PublicPartDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-    notifyQueries(-244849286, {database.publicPartQueries.selectAll +
-        database.publicPartQueries.selectById})
-  }
-
-  public override fun removeAll(): Unit {
-    driver.execute(1377573625, """DELETE FROM PublicPartDb""", 0)
-    notifyQueries(1377573625, {database.publicPartQueries.selectAll +
-        database.publicPartQueries.selectById})
-  }
-
-  private inner class SelectByIdQuery<out T : Any>(
-    public val id: String,
-    mapper: (SqlCursor) -> T
-  ) : Query<T>(selectById, mapper) {
-    public override fun execute(): SqlCursor = driver.executeQuery(1295590898, """
-    |SELECT *
-    |FROM PublicPartDb
-    |WHERE id = ?
-    """.trimMargin(), 1) {
-      bindString(1, id)
-    }
-
-    public override fun toString(): String = "PublicPart.sq:selectById"
   }
 }
 
@@ -1024,5 +564,465 @@ private class ChatUserQueriesImpl(
     }
 
     public override fun toString(): String = "ChatUser.sq:selectById"
+  }
+}
+
+private class PublicPartQueriesImpl(
+  private val database: BloomDatabaseImpl,
+  private val driver: SqlDriver
+) : TransacterImpl(driver), PublicPartQueries {
+  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
+
+  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
+
+  public override fun <T : Any> selectById(id: String, mapper: (
+    id: String,
+    registrationId: Long?,
+    name: String?,
+    deviceId: Long?,
+    preKeyId: Long?,
+    preKeyPublicKey: String?,
+    signedPreKeyId: Long?,
+    signedPreKeyPublicKey: String?,
+    signedPreKeySignature: String?,
+    identityKeyPairPublicKey: String?
+  ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getLong(1),
+      cursor.getString(2),
+      cursor.getLong(3),
+      cursor.getLong(4),
+      cursor.getString(5),
+      cursor.getLong(6),
+      cursor.getString(7),
+      cursor.getString(8),
+      cursor.getString(9)
+    )
+  }
+
+  public override fun selectById(id: String): Query<PublicPartDb> = selectById(id) { id_,
+      registrationId, name, deviceId, preKeyId, preKeyPublicKey, signedPreKeyId,
+      signedPreKeyPublicKey, signedPreKeySignature, identityKeyPairPublicKey ->
+    PublicPartDb(
+      id_,
+      registrationId,
+      name,
+      deviceId,
+      preKeyId,
+      preKeyPublicKey,
+      signedPreKeyId,
+      signedPreKeyPublicKey,
+      signedPreKeySignature,
+      identityKeyPairPublicKey
+    )
+  }
+
+  public override fun <T : Any> selectAll(mapper: (
+    id: String,
+    registrationId: Long?,
+    name: String?,
+    deviceId: Long?,
+    preKeyId: Long?,
+    preKeyPublicKey: String?,
+    signedPreKeyId: Long?,
+    signedPreKeyPublicKey: String?,
+    signedPreKeySignature: String?,
+    identityKeyPairPublicKey: String?
+  ) -> T): Query<T> = Query(-1620776063, selectAll, driver, "PublicPart.sq", "selectAll",
+      "SELECT * FROM PublicPartDb") { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getLong(1),
+      cursor.getString(2),
+      cursor.getLong(3),
+      cursor.getLong(4),
+      cursor.getString(5),
+      cursor.getLong(6),
+      cursor.getString(7),
+      cursor.getString(8),
+      cursor.getString(9)
+    )
+  }
+
+  public override fun selectAll(): Query<PublicPartDb> = selectAll { id, registrationId, name,
+      deviceId, preKeyId, preKeyPublicKey, signedPreKeyId, signedPreKeyPublicKey,
+      signedPreKeySignature, identityKeyPairPublicKey ->
+    PublicPartDb(
+      id,
+      registrationId,
+      name,
+      deviceId,
+      preKeyId,
+      preKeyPublicKey,
+      signedPreKeyId,
+      signedPreKeyPublicKey,
+      signedPreKeySignature,
+      identityKeyPairPublicKey
+    )
+  }
+
+  public override fun insert(PublicPartDb: PublicPartDb): Unit {
+    driver.execute(983950269, """
+    |INSERT OR REPLACE INTO PublicPartDb
+    |VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """.trimMargin(), 10) {
+      bindString(1, PublicPartDb.id)
+      bindLong(2, PublicPartDb.registrationId)
+      bindString(3, PublicPartDb.name)
+      bindLong(4, PublicPartDb.deviceId)
+      bindLong(5, PublicPartDb.preKeyId)
+      bindString(6, PublicPartDb.preKeyPublicKey)
+      bindLong(7, PublicPartDb.signedPreKeyId)
+      bindString(8, PublicPartDb.signedPreKeyPublicKey)
+      bindString(9, PublicPartDb.signedPreKeySignature)
+      bindString(10, PublicPartDb.identityKeyPairPublicKey)
+    }
+    notifyQueries(983950269, {database.publicPartQueries.selectAll +
+        database.publicPartQueries.selectById})
+  }
+
+  public override fun removeById(id: String): Unit {
+    driver.execute(-244849286, """
+    |DELETE FROM PublicPartDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+    notifyQueries(-244849286, {database.publicPartQueries.selectAll +
+        database.publicPartQueries.selectById})
+  }
+
+  public override fun removeAll(): Unit {
+    driver.execute(1377573625, """DELETE FROM PublicPartDb""", 0)
+    notifyQueries(1377573625, {database.publicPartQueries.selectAll +
+        database.publicPartQueries.selectById})
+  }
+
+  private inner class SelectByIdQuery<out T : Any>(
+    public val id: String,
+    mapper: (SqlCursor) -> T
+  ) : Query<T>(selectById, mapper) {
+    public override fun execute(): SqlCursor = driver.executeQuery(1295590898, """
+    |SELECT *
+    |FROM PublicPartDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+
+    public override fun toString(): String = "PublicPart.sq:selectById"
+  }
+}
+
+private class ProfileQueriesImpl(
+  private val database: BloomDatabaseImpl,
+  private val driver: SqlDriver
+) : TransacterImpl(driver), ProfileQueries {
+  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
+
+  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
+
+  public override fun <T : Any> selectById(id: String, mapper: (id: String,
+      presence: String?) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getString(1)
+    )
+  }
+
+  public override fun selectById(id: String): Query<ProfileDb> = selectById(id) { id_, presence ->
+    ProfileDb(
+      id_,
+      presence
+    )
+  }
+
+  public override fun <T : Any> selectAll(mapper: (id: String, presence: String?) -> T): Query<T> =
+      Query(1079106280, selectAll, driver, "Profile.sq", "selectAll", "SELECT * FROM ProfileDb") {
+      cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getString(1)
+    )
+  }
+
+  public override fun selectAll(): Query<ProfileDb> = selectAll { id, presence ->
+    ProfileDb(
+      id,
+      presence
+    )
+  }
+
+  public override fun insert(ProfileDb: ProfileDb): Unit {
+    driver.execute(114984374, """
+    |INSERT OR REPLACE INTO ProfileDb
+    |VALUES (?, ?)
+    """.trimMargin(), 2) {
+      bindString(1, ProfileDb.id)
+      bindString(2, ProfileDb.presence)
+    }
+    notifyQueries(114984374, {database.profileQueries.selectById +
+        database.profileQueries.selectAll})
+  }
+
+  public override fun removeById(id: String): Unit {
+    driver.execute(1847124723, """
+    |DELETE FROM ProfileDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+    notifyQueries(1847124723, {database.profileQueries.selectById +
+        database.profileQueries.selectAll})
+  }
+
+  public override fun removeAll(): Unit {
+    driver.execute(-217511328, """DELETE FROM ProfileDb""", 0)
+    notifyQueries(-217511328, {database.profileQueries.selectById +
+        database.profileQueries.selectAll})
+  }
+
+  private inner class SelectByIdQuery<out T : Any>(
+    public val id: String,
+    mapper: (SqlCursor) -> T
+  ) : Query<T>(selectById, mapper) {
+    public override fun execute(): SqlCursor = driver.executeQuery(-907402389, """
+    |SELECT *
+    |FROM ProfileDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+
+    public override fun toString(): String = "Profile.sq:selectById"
+  }
+}
+
+private class PrivatePartQueriesImpl(
+  private val database: BloomDatabaseImpl,
+  private val driver: SqlDriver
+) : TransacterImpl(driver), PrivatePartQueries {
+  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
+
+  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
+
+  public override fun <T : Any> selectById(id: String, mapper: (
+    id: String,
+    name: String?,
+    deviceId: Long?,
+    registrationId: Long?,
+    identityKeyPair: String?,
+    preKeys: String?,
+    signedPreKey: String?
+  ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getString(1),
+      cursor.getLong(2),
+      cursor.getLong(3),
+      cursor.getString(4),
+      cursor.getString(5),
+      cursor.getString(6)
+    )
+  }
+
+  public override fun selectById(id: String): Query<PrivatePartDb> = selectById(id) { id_, name,
+      deviceId, registrationId, identityKeyPair, preKeys, signedPreKey ->
+    PrivatePartDb(
+      id_,
+      name,
+      deviceId,
+      registrationId,
+      identityKeyPair,
+      preKeys,
+      signedPreKey
+    )
+  }
+
+  public override fun <T : Any> selectAll(mapper: (
+    id: String,
+    name: String?,
+    deviceId: Long?,
+    registrationId: Long?,
+    identityKeyPair: String?,
+    preKeys: String?,
+    signedPreKey: String?
+  ) -> T): Query<T> = Query(-155026277, selectAll, driver, "PrivatePart.sq", "selectAll",
+      "SELECT * FROM PrivatePartDb") { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getString(1),
+      cursor.getLong(2),
+      cursor.getLong(3),
+      cursor.getString(4),
+      cursor.getString(5),
+      cursor.getString(6)
+    )
+  }
+
+  public override fun selectAll(): Query<PrivatePartDb> = selectAll { id, name, deviceId,
+      registrationId, identityKeyPair, preKeys, signedPreKey ->
+    PrivatePartDb(
+      id,
+      name,
+      deviceId,
+      registrationId,
+      identityKeyPair,
+      preKeys,
+      signedPreKey
+    )
+  }
+
+  public override fun insert(PrivatePartDb: PrivatePartDb): Unit {
+    driver.execute(951417059, """
+    |INSERT OR REPLACE INTO PrivatePartDb
+    |VALUES (?, ?, ?, ?, ?, ?, ?)
+    """.trimMargin(), 7) {
+      bindString(1, PrivatePartDb.id)
+      bindString(2, PrivatePartDb.name)
+      bindLong(3, PrivatePartDb.deviceId)
+      bindLong(4, PrivatePartDb.registrationId)
+      bindString(5, PrivatePartDb.identityKeyPair)
+      bindString(6, PrivatePartDb.preKeys)
+      bindString(7, PrivatePartDb.signedPreKey)
+    }
+    notifyQueries(951417059, {database.privatePartQueries.selectById +
+        database.privatePartQueries.selectAll})
+  }
+
+  public override fun removeById(id: String): Unit {
+    driver.execute(-2051246176, """
+    |DELETE FROM PrivatePartDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+    notifyQueries(-2051246176, {database.privatePartQueries.selectById +
+        database.privatePartQueries.selectAll})
+  }
+
+  public override fun removeAll(): Unit {
+    driver.execute(-1451643885, """DELETE FROM PrivatePartDb""", 0)
+    notifyQueries(-1451643885, {database.privatePartQueries.selectById +
+        database.privatePartQueries.selectAll})
+  }
+
+  private inner class SelectByIdQuery<out T : Any>(
+    public val id: String,
+    mapper: (SqlCursor) -> T
+  ) : Query<T>(selectById, mapper) {
+    public override fun execute(): SqlCursor = driver.executeQuery(-510805992, """
+    |SELECT *
+    |FROM PrivatePartDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+
+    public override fun toString(): String = "PrivatePart.sq:selectById"
+  }
+}
+
+private class ChatPresenceQueriesImpl(
+  private val database: BloomDatabaseImpl,
+  private val driver: SqlDriver
+) : TransacterImpl(driver), ChatPresenceQueries {
+  internal val selectById: MutableList<Query<*>> = copyOnWriteList()
+
+  internal val selectAll: MutableList<Query<*>> = copyOnWriteList()
+
+  public override fun <T : Any> selectById(id: String, mapper: (
+    id: String,
+    user: String?,
+    status: String?,
+    info: String?
+  ) -> T): Query<T> = SelectByIdQuery(id) { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getString(1),
+      cursor.getString(2),
+      cursor.getString(3)
+    )
+  }
+
+  public override fun selectById(id: String): Query<ChatPresenceDb> = selectById(id) { id_, user,
+      status, info ->
+    ChatPresenceDb(
+      id_,
+      user,
+      status,
+      info
+    )
+  }
+
+  public override fun <T : Any> selectAll(mapper: (
+    id: String,
+    user: String?,
+    status: String?,
+    info: String?
+  ) -> T): Query<T> = Query(-1833405206, selectAll, driver, "ChatPresence.sq", "selectAll",
+      "SELECT * FROM ChatPresenceDb") { cursor ->
+    mapper(
+      cursor.getString(0)!!,
+      cursor.getString(1),
+      cursor.getString(2),
+      cursor.getString(3)
+    )
+  }
+
+  public override fun selectAll(): Query<ChatPresenceDb> = selectAll { id, user, status, info ->
+    ChatPresenceDb(
+      id,
+      user,
+      status,
+      info
+    )
+  }
+
+  public override fun insert(ChatPresenceDb: ChatPresenceDb): Unit {
+    driver.execute(2006973172, """
+    |INSERT OR REPLACE INTO ChatPresenceDb
+    |VALUES (?, ?, ?, ?)
+    """.trimMargin(), 4) {
+      bindString(1, ChatPresenceDb.id)
+      bindString(2, ChatPresenceDb.user)
+      bindString(3, ChatPresenceDb.status)
+      bindString(4, ChatPresenceDb.info)
+    }
+    notifyQueries(2006973172, {database.chatPresenceQueries.selectAll +
+        database.chatPresenceQueries.selectById})
+  }
+
+  public override fun removeById(id: String): Unit {
+    driver.execute(1753581873, """
+    |DELETE FROM ChatPresenceDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+    notifyQueries(1753581873, {database.chatPresenceQueries.selectAll +
+        database.chatPresenceQueries.selectById})
+  }
+
+  public override fun removeAll(): Unit {
+    driver.execute(1164944482, """DELETE FROM ChatPresenceDb""", 0)
+    notifyQueries(1164944482, {database.chatPresenceQueries.selectAll +
+        database.chatPresenceQueries.selectById})
+  }
+
+  private inner class SelectByIdQuery<out T : Any>(
+    public val id: String,
+    mapper: (SqlCursor) -> T
+  ) : Query<T>(selectById, mapper) {
+    public override fun execute(): SqlCursor = driver.executeQuery(-1000945239, """
+    |SELECT *
+    |FROM ChatPresenceDb
+    |WHERE id = ?
+    """.trimMargin(), 1) {
+      bindString(1, id)
+    }
+
+    public override fun toString(): String = "ChatPresence.sq:selectById"
   }
 }
